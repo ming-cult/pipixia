@@ -37,20 +37,20 @@ Module.prototype.require = function (...args) {
 const tmpDirPath = path.join(__dirname, '..', 'tmp');
 mkdirp.sync(tmpDirPath);
 
-function getRoutesPath(themePath, configEntryName) {
-  const routesTemplate = fs.readFileSync(path.join(__dirname, 'routes.nunjucks.js')).toString();
-  const routesPath = path.join(tmpDirPath, `routes.${configEntryName}.js`);
-  const { bishengConfig, themeConfig } = context;
-  fs.writeFileSync(
-    routesPath,
-    nunjucks.renderString(routesTemplate, {
-      themePath: escapeWinPath(themePath),
-      themeConfig: JSON.stringify(bishengConfig.themeConfig),
-      themeRoutes: JSON.stringify(themeConfig.routes),
-    }),
-  );
-  return routesPath;
-}
+// function getRoutesPath(themePath, configEntryName) {
+//   const routesTemplate = fs.readFileSync(path.join(__dirname, 'routes.nunjucks.js')).toString();
+//   const routesPath = path.join(tmpDirPath, `routes.${configEntryName}.js`);
+//   const { bishengConfig, themeConfig } = context;
+//   fs.writeFileSync(
+//     routesPath,
+//     nunjucks.renderString(routesTemplate, {
+//       themePath: escapeWinPath(themePath),
+//       themeConfig: JSON.stringify(bishengConfig.themeConfig),
+//       themeRoutes: JSON.stringify(themeConfig.routes),
+//     }),
+//   );
+//   return routesPath;
+// }
 
 function generateEntryFile(configTheme, configEntryName, root) {
   const entryTemplate = fs.readFileSync(path.join(__dirname, 'entry.nunjucks.js')).toString();
@@ -73,12 +73,12 @@ exports.start = function start(program) {
     process.cwd(),
     program.config || 'bisheng.config.js',
   );
-  // const bishengConfig = getBishengConfig(configFile);
+  const bishengConfig = getBishengConfig(configFile);
   // const themeConfig = getThemeConfig(bishengConfig.theme);
-  // context.initialize({
-  //   bishengConfig,
-  //   themeConfig,
-  // });
+  context.initialize({
+    bishengConfig,
+    // themeConfig,
+  });
   // mkdirp.sync(bishengConfig.output);
 
   // const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
@@ -184,140 +184,140 @@ function getManifest(compilation) {
   return manifest;
 }
 
-exports.build = function build(program, callback) {
-  const configFile = path.join(
-    process.cwd(),
-    program.config || 'bisheng.config.js',
-  );
-  const bishengConfig = getBishengConfig(configFile);
-  const themeConfig = getThemeConfig(bishengConfig.theme);
-  context.initialize({
-    bishengConfig,
-    themeConfig,
-    isBuild: true,
-  });
-  mkdirp.sync(bishengConfig.output);
+// exports.build = function build(program, callback) {
+//   const configFile = path.join(
+//     process.cwd(),
+//     program.config || 'bisheng.config.js',
+//   );
+//   const bishengConfig = getBishengConfig(configFile);
+//   const themeConfig = getThemeConfig(bishengConfig.theme);
+//   context.initialize({
+//     bishengConfig,
+//     themeConfig,
+//     isBuild: true,
+//   });
+//   mkdirp.sync(bishengConfig.output);
 
-  const { entryName } = bishengConfig;
-  generateEntryFile(
-    bishengConfig.theme,
-    entryName,
-    bishengConfig.root,
-  );
-  const webpackConfig = updateWebpackConfig(getWebpackCommonConfig(), 'build');
-  webpackConfig.plugins.push(
-    new webpack.LoaderOptionsPlugin({
-      minimize: true,
-    }),
-  );
+//   const { entryName } = bishengConfig;
+//   generateEntryFile(
+//     bishengConfig.theme,
+//     entryName,
+//     bishengConfig.root,
+//   );
+//   const webpackConfig = updateWebpackConfig(getWebpackCommonConfig(), 'build');
+//   webpackConfig.plugins.push(
+//     new webpack.LoaderOptionsPlugin({
+//       minimize: true,
+//     }),
+//   );
 
-  webpackConfig.plugins.push(
-    new webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify(
-        process.env.NODE_ENV || 'production',
-      ),
-    }),
-  );
+//   webpackConfig.plugins.push(
+//     new webpack.DefinePlugin({
+//       'process.env.NODE_ENV': JSON.stringify(
+//         process.env.NODE_ENV || 'production',
+//       ),
+//     }),
+//   );
 
-  const ssrWebpackConfig = Object.assign({}, webpackConfig);
-  const ssrPath = path.join(tmpDirPath, `ssr.${entryName}.js`);
-  const routesPath = getRoutesPath(path.dirname(bishengConfig.theme), entryName);
-  fs.writeFileSync(ssrPath, nunjucks.renderString(ssrTemplate, { routesPath: escapeWinPath(routesPath) }));
+//   const ssrWebpackConfig = Object.assign({}, webpackConfig);
+//   const ssrPath = path.join(tmpDirPath, `ssr.${entryName}.js`);
+//   const routesPath = getRoutesPath(path.dirname(bishengConfig.theme), entryName);
+//   fs.writeFileSync(ssrPath, nunjucks.renderString(ssrTemplate, { routesPath: escapeWinPath(routesPath) }));
 
-  ssrWebpackConfig.entry = {
-    [`${entryName}-ssr`]: ssrPath,
-  };
-  ssrWebpackConfig.target = 'node';
-  ssrWebpackConfig.output = Object.assign({}, ssrWebpackConfig.output, {
-    filename: '[name].js',
-    path: tmpDirPath,
-    library: 'ssr',
-    libraryTarget: 'commonjs',
-  });
+//   ssrWebpackConfig.entry = {
+//     [`${entryName}-ssr`]: ssrPath,
+//   };
+//   ssrWebpackConfig.target = 'node';
+//   ssrWebpackConfig.output = Object.assign({}, ssrWebpackConfig.output, {
+//     filename: '[name].js',
+//     path: tmpDirPath,
+//     library: 'ssr',
+//     libraryTarget: 'commonjs',
+//   });
 
-  webpack(webpackConfig, (err, stats) => {
-    if (err !== null) {
-      return console.error(err);
-    }
+//   webpack(webpackConfig, (err, stats) => {
+//     if (err !== null) {
+//       return console.error(err);
+//     }
 
-    if (stats.hasErrors()) {
-      console.log(stats.toString('errors-only'));
-      return;
-    }
-    const manifest = getManifest(stats.compilation)[bishengConfig.entryName];
+//     if (stats.hasErrors()) {
+//       console.log(stats.toString('errors-only'));
+//       return;
+//     }
+//     const manifest = getManifest(stats.compilation)[bishengConfig.entryName];
 
-    const markdown = sourceData.generate(bishengConfig.source, bishengConfig.transformers);
-    let filesNeedCreated = generateFilesPath(themeConfig.routes, markdown).map(bishengConfig.filePathMapper);
-    filesNeedCreated = R.unnest(filesNeedCreated);
+//     const markdown = sourceData.generate(bishengConfig.source, bishengConfig.transformers);
+//     let filesNeedCreated = generateFilesPath(themeConfig.routes, markdown).map(bishengConfig.filePathMapper);
+//     filesNeedCreated = R.unnest(filesNeedCreated);
 
-    const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
+//     const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
 
-    if (!program.ssr) {
-      require('./loaders/common/boss').jobDone();
-      const templateData = Object.assign(
-        {
-          root: bishengConfig.root,
-          hash: bishengConfig.hash,
-          manifest,
-        },
-        bishengConfig.htmlTemplateExtraData || {},
-      );
-      const fileContent = nunjucks.renderString(template, templateData);
-      filesNeedCreated.forEach((file) => {
-        const output = path.join(bishengConfig.output, file);
-        mkdirp.sync(path.dirname(output));
-        fs.writeFileSync(output, fileContent);
-        console.log('Created: ', output);
-      });
+//     if (!program.ssr) {
+//       require('./loaders/common/boss').jobDone();
+//       const templateData = Object.assign(
+//         {
+//           root: bishengConfig.root,
+//           hash: bishengConfig.hash,
+//           manifest,
+//         },
+//         bishengConfig.htmlTemplateExtraData || {},
+//       );
+//       const fileContent = nunjucks.renderString(template, templateData);
+//       filesNeedCreated.forEach((file) => {
+//         const output = path.join(bishengConfig.output, file);
+//         mkdirp.sync(path.dirname(output));
+//         fs.writeFileSync(output, fileContent);
+//         console.log('Created: ', output);
+//       });
 
-      if (callback) {
-        callback();
-      }
-      return;
-    }
+//       if (callback) {
+//         callback();
+//       }
+//       return;
+//     }
 
-    context.turnOnSSRFlag();
-    // If we can build webpackConfig without errors, we can build ssrWebpackConfig without errors.
-    // Because ssrWebpackConfig are just part of webpackConfig.
-    webpack(ssrWebpackConfig, (ssrBuildErr, ssrBuildStats) => {
-      if (ssrBuildErr) throw ssrBuildErr;
-      if (ssrBuildStats.hasErrors()) throw ssrBuildStats.toString('errors-only');
+//     context.turnOnSSRFlag();
+//     // If we can build webpackConfig without errors, we can build ssrWebpackConfig without errors.
+//     // Because ssrWebpackConfig are just part of webpackConfig.
+//     webpack(ssrWebpackConfig, (ssrBuildErr, ssrBuildStats) => {
+//       if (ssrBuildErr) throw ssrBuildErr;
+//       if (ssrBuildStats.hasErrors()) throw ssrBuildStats.toString('errors-only');
 
-      require('./loaders/common/boss').jobDone();
+//       require('./loaders/common/boss').jobDone();
 
-      const { ssr } = require(path.join(tmpDirPath, `${entryName}-ssr`));
-      const fileCreatedPromises = filesNeedCreated.map((file) => {
-        const output = path.join(bishengConfig.output, file);
-        mkdirp.sync(path.dirname(output));
-        return new Promise((resolve) => {
-          ssr(filenameToUrl(file), (error, content) => {
-            if (error) {
-              console.error(error);
-              process.exit(1);
-            }
-            const templateData = Object.assign(
-              {
-                root: bishengConfig.root,
-                content, hash: bishengConfig.hash,
-                manifest,
-              },
-              bishengConfig.htmlTemplateExtraData || {},
-            );
-            const fileContent = nunjucks.renderString(template, templateData);
-            fs.writeFileSync(output, fileContent);
-            console.log('Created: ', output);
-            resolve();
-          });
-        });
-      });
-      Promise.all(fileCreatedPromises).then(() => {
-        if (callback) {
-          callback();
-        }
-      });
-    });
-  });
-};
+//       const { ssr } = require(path.join(tmpDirPath, `${entryName}-ssr`));
+//       const fileCreatedPromises = filesNeedCreated.map((file) => {
+//         const output = path.join(bishengConfig.output, file);
+//         mkdirp.sync(path.dirname(output));
+//         return new Promise((resolve) => {
+//           ssr(filenameToUrl(file), (error, content) => {
+//             if (error) {
+//               console.error(error);
+//               process.exit(1);
+//             }
+//             const templateData = Object.assign(
+//               {
+//                 root: bishengConfig.root,
+//                 content, hash: bishengConfig.hash,
+//                 manifest,
+//               },
+//               bishengConfig.htmlTemplateExtraData || {},
+//             );
+//             const fileContent = nunjucks.renderString(template, templateData);
+//             fs.writeFileSync(output, fileContent);
+//             console.log('Created: ', output);
+//             resolve();
+//           });
+//         });
+//       });
+//       Promise.all(fileCreatedPromises).then(() => {
+//         if (callback) {
+//           callback();
+//         }
+//       });
+//     });
+//   });
+// };
 
 function pushToGhPages(basePath, config) {
   const options = {
