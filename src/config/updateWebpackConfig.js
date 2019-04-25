@@ -54,17 +54,17 @@ export default function updateWebpackConfig(webpackConfig, mode) {
     webpack,
   );
 
-  const entryPath = path.join(
-    bishengLib,
-    '..',
-    'tmp',
-    `entry.${bishengConfig.entryName}.js`,
-  );
-  if (customizedWebpackConfig.entry[bishengConfig.entryName]) {
-    throw new Error(
-      `Should not set \`webpackConfig.entry.${bishengConfig.entryName}\`!`,
-    );
-  }
-  customizedWebpackConfig.entry[bishengConfig.entryName] = entryPath;
+  // const entryPath = path.join(
+  //   bishengLib,
+  //   '..',
+  //   'tmp',
+  //   `entry.${bishengConfig.entryName}.js`,
+  // );
+  // if (customizedWebpackConfig.entry[bishengConfig.entryName]) {
+  //   throw new Error(
+  //     `Should not set \`webpackConfig.entry.${bishengConfig.entryName}\`!`,
+  //   );
+  // }
+  // customizedWebpackConfig.entry[bishengConfig.entryName] = entryPath;
   return customizedWebpackConfig;
 }
