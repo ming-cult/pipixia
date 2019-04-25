@@ -124,18 +124,6 @@ export default function getWebpackCommonConfig() {
             limit: 10000,
           },
         },
-        // {
-        //   test: /\.md$/,
-        //   use: [
-        //     {
-        //       loader: require.resolve('babel-loader'),
-        //       options: babelOptions,
-        //     },
-        //     {
-        //       loader: require.resolve(''),
-        //     },
-        //   ],
-        // },
         {
           test: /\.md$/,
           loader: `babel-loader!${join(__dirname, './markdownLoader.js')}`
