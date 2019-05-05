@@ -14,9 +14,11 @@ export default function updateWebpackConfig(webpackConfig, mode) {
   /* eslint-disable no-param-reassign */
   webpackConfig.entry = {};
   if (context.isBuild) {
-    webpackConfig.output.path = path.join(process.cwd(), bishengConfig.output);
+    // webpackConfig.output.path = path.join(process.cwd(), bishengConfig.output);
+    webpackConfig.output.path = bishengConfig.output;
   }
-  webpackConfig.output.publicPath = context.isBuild ? bishengConfig.root : '/';
+  // webpackConfig.output.publicPath = context.isBuild ? bishengConfig.root : '/';
+  webpackConfig.output.publicPath = context.isBuild ? '/' : '/';
   if (mode === 'start') {
     styleLoadersConfig.forEach((config) => {
       webpackConfig.module.rules.push({
